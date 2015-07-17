@@ -6,17 +6,20 @@
 import psycopg2
 
 
-def connect():
+def connect(database_name="tournament"):
     """Connect to the PostgreSQL database.  Returns a database connection."""
-
-    return psycopg2.connect("dbname=tournament")
+    try:
+        db = psycopg2.connect("dbname={}".format(database_name))
+        cursor = db.cursor()
+        return db, cursor
+    except ValueError:
+        print "Unable to connect to the {} database".format(database_name)
 
 
 def deleteMatches():
     """Remove all the match records from the database."""
 
-    db = connect()
-    c = db.cursor()
+    db, c = connect()
     c.execute("DELETE FROM matches")
     db.commit()
     db.close()
@@ -25,8 +28,7 @@ def deleteMatches():
 def deletePlayers():
     """Remove all the player records from the database."""
 
-    db = connect()
-    c = db.cursor()
+    db, c = connect()
     c.execute("DELETE FROM players")
     db.commit()
     db.close()
@@ -35,8 +37,7 @@ def deletePlayers():
 def countPlayers():
     """Returns the number of players currently registered."""
 
-    db = connect()
-    c = db.cursor()
+    db, c = connect()
     c.execute("SELECT count(*) FROM players")
     count = c.fetchall()
     db.close()
@@ -53,8 +54,7 @@ def registerPlayer(name):
       name: the player's full name (need not be unique).
     """
 
-    db = connect()
-    c = db.cursor()
+    db, c = connect()
     c.execute("INSERT INTO players(name) values('%s')" % name)
     db.commit()
     db.close()
@@ -74,8 +74,7 @@ def playerStandings():
         matches: the number of matches the player has played
     """
 
-    db = connect()
-    c = db.cursor()
+    db, c = connect()
     query = """SELECT players.id, players.name, count(matches.winner) as wins, count(matches_played.total) as total_matches
                 FROM players
                 LEFT JOIN matches on matches.winner = players.id
@@ -95,8 +94,7 @@ def reportMatch(winner, loser):
       loser:  the id number of the player who lost
     """
 
-    db = connect()
-    c = db.cursor()
+    db, c = connect()
     c.execute("INSERT INTO matches (winner, loser) values (%s, %s)" % (winner, loser))
     db.commit()
     db.close()
@@ -118,8 +116,7 @@ def swissPairings():
         name2: the second player's name
     """
 
-    db = connect()
-    c = db.cursor()
+    db, c = connect()
     query = """SELECT players.id, players.name, count(matches.winner) as wins, count(matches_played.total) as total_matches
                 FROM players
                 LEFT JOIN matches on matches.winner = players.id
